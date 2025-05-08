@@ -2,6 +2,9 @@
 
 import { fetchProductCategories, fetchAllProducts } from './products-api.js';
 import { refs } from './refs.js';
+import { cards } from './storage.js';
+import { openModal } from './modal.js';
+
 
 //Функції для створення, рендеру або видалення розмітки
 const listProducts = document.querySelector('.products');
@@ -30,27 +33,108 @@ export function createMarkupProducts(products) {
 }
 
 // Функція для ініціалізації сторінки (отримання даних і рендеринг)
+// export async function initPage() {
+//     // Сховати списки
+//   refs.categoriesListEl.classList.add('hidden');
+//   refs.productsListEl.classList.add('hidden');
+
+//     // Сховати блок "not found", якщо він раніше зʼявлявся
+//   document.querySelector('.not-found').classList.add('is-hidden');
+
+//   // Показати лоадер
+//   showLoader();
+
+//   try {
+//     // Отримуємо категорії і продукти
+//     const categories = await fetchProductCategories();
+//     const products = await fetchAllProducts();
+
+//     // Створюємо розмітку категорій і продуктів
+//     const categoriesMarkup = createMarkupCategories(categories);
+//     const productsMarkup = createMarkupProducts(products);
+
+//     // Вставляємо розмітку в DOM
+//     const categoriesList = document.querySelector('.categories');
+//     const productsList = document.querySelector('.products');
+    
+//     categoriesList.insertAdjacentHTML('beforeend', categoriesMarkup);
+//     productsList.insertAdjacentHTML('beforeend', productsMarkup);
+      
+//       // Показати списки
+//     refs.categoriesListEl.classList.remove('hidden');
+//     refs.productsListEl.classList.remove('hidden');
+  
+//   } catch (error) {
+//     console.error('Помилка при ініціалізації сторінки:', error.message);
+//   } finally {
+//     // Сховати лоадер
+//     hideLoader();
+//   }
+// }
+
 export async function initPage() {
+  // Сховати список категорій та продуктів перед завантаженням
+  refs.categoriesListEl.classList.add('hidden');
+  refs.productsListEl.classList.add('hidden');
+
+  // Сховати блок "not-found", якщо він був показаний раніше
+  document.querySelector('.not-found').classList.add('is-hidden');
+
+  // Показати індикатор завантаження (спінер)
+  showLoader();
+
   try {
-    // Отримуємо категорії і продукти
+    // Отримати список категорій з API
     const categories = await fetchProductCategories();
+
+    // Отримати список всіх продуктів (наприклад, перших 12 або всі, залежно від реалізації)
     const products = await fetchAllProducts();
 
-    // Створюємо розмітку категорій і продуктів
+    // Створити HTML-розмітку для списку категорій
     const categoriesMarkup = createMarkupCategories(categories);
+
+    // Створити HTML-розмітку для списку продуктів
     const productsMarkup = createMarkupProducts(products);
 
-    // Вставляємо розмітку в DOM
+    // Отримати посилання на DOM-елементи списків
     const categoriesList = document.querySelector('.categories');
     const productsList = document.querySelector('.products');
-    
+
+    // Додати HTML категорій до списку на сторінці
     categoriesList.insertAdjacentHTML('beforeend', categoriesMarkup);
-    productsList.insertAdjacentHTML('beforeend', productsMarkup);
-      
-      showLoadMoreBtn();
-  
+
+    // Якщо масив продуктів порожній:
+    if (products.length === 0) {
+      // Показати блок "No Products Found"
+      document.querySelector('.not-found').classList.remove('is-hidden');
+    } else {
+      // Якщо продукти є — вставити HTML до DOM
+      productsList.insertAdjacentHTML('beforeend', productsMarkup);
+
+      // Показати список продуктів
+      refs.productsListEl.classList.remove('hidden');
+    }
+
+    // Показати список категорій
+    refs.categoriesListEl.classList.remove('hidden');
+
+    //  Додати делегування подій на картки
+    productsList.addEventListener('click', e => {
+    const card = e.target.closest('.product-card');
+    if (!card) return;
+
+    const id = card.dataset.id;
+    if (!id) return;
+
+    openModal(id);
+});
+
   } catch (error) {
+    // Вивести помилку у консоль, якщо щось пішло не так при запиті
     console.error('Помилка при ініціалізації сторінки:', error.message);
+  } finally {
+    // У будь-якому випадку — сховати спінер
+    hideLoader();
   }
 }
 
@@ -91,7 +175,21 @@ export function hideLoader() {
   }
 }
 
-// Функція додавання елементів на стлорінку по кліку на кнопку 'Load more'
+export function showPageLoader() {
+  document.querySelectorAll('.loader-page').forEach(loader => {
+    loader.classList.remove('is-hidden');
+    loader.classList.add('is-visible');
+  });
+}
+
+export function hidePageLoader() {
+  document.querySelectorAll('.loader-page').forEach(loader => {
+    loader.classList.add('is-hidden');
+    loader.classList.remove('is-visible');
+  });
+}
+
+// Функція додавання елементів на сторінку по кліку на кнопку 'Load more'
 export async function addLoadMoreProducts(products) {
     try {
         const products = await fetchAllProducts();
@@ -101,3 +199,58 @@ export async function addLoadMoreProducts(products) {
         console.error('Error fetching products:', error.message);
     }
 }
+
+refs.productsListEl.addEventListener('click', (e) => {
+  const card = e.target.closest('.products__item');
+  if (!card) return;
+
+  const productId = card.dataset.id;
+  const product = cards.find(p => p.id === Number(productId)); // отримуємо продукт за ID
+
+  if (product) {
+    openModal(product); // передаємо продукт до модалки
+  }
+});
+// Функція для рендерингу карток з localStorage
+export async function renderCardsFromStorage() {
+    if (cards.length > 0) {
+        const markup = createMarkupProducts(cards);
+        refs.productsListEl.insertAdjacentHTML('beforeend', markup);
+        showLoadMoreBtn();
+    }
+}
+
+// Функція для рендерингу продукту в модальному вікні
+export async function renderModalProduct(product) {
+  const {
+    images,
+    title,
+    description,
+    tags,
+    shippingInformation,
+    returnPolicy,
+    price,
+  } = product;
+
+  //шукаємо контейнер для модального продукту
+   const modalProductContainer = refs.modalContentEl.querySelector('.modal-product');
+  if (!modalProductContainer) {
+    console.warn('Element .modal-product not found');
+    return;
+  }
+
+  // Оновлюємо лише вміст .modal-product
+  modalProductContainer.innerHTML = `
+    <img class="modal-product__img" src="${images[0]}" alt="${title}" />
+    <div class="modal-product__content">
+      <p class="modal-product__title">${title}</p>
+      <ul class="modal-product__tags">${tags?.map(tag => `<li>${tag}</li>`).join('')}</ul>
+      <p class="modal-product__description">${description}</p>
+      <p class="modal-product__shipping-information">Shipping: ${shippingInformation || "Not specified"}</p>
+      <p class="modal-product__return-policy">Return Policy: ${returnPolicy || "Not specified"}</p>
+      <p class="modal-product__price">Price: ${price}$</p>
+      <button class="modal-product__buy-btn" type="button">Buy</button>
+    </div>
+  `;
+}
+

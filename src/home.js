@@ -3,9 +3,8 @@
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 
-import { fetchProductCategories, fetchProductsByCategory, fetchAllProducts } from './js/products-api.js';
-import {
-    createMarkupCategories,    
+import { fetchProductsByCategory, fetchAllProducts, fetchProductById } from './js/products-api.js';
+import {   
     createMarkupProducts,
     clearMarkupProducts,
     initPage,
@@ -13,11 +12,24 @@ import {
     hideLoadMoreBtn,
     showLoader,
     hideLoader,
-    addLoadMoreProducts
+    addLoadMoreProducts,
+    renderCardsFromStorage,
+    showPageLoader,
+    hidePageLoader
 } from "./js/render-function";
 import { refs } from './js/refs.js';
+import { cards, saveCardsToStorage, loadCardsFromStorage } from './js/storage.js';
+import { openModal, closeModal } from './js/modal.js';
 
-initPage();
+document.addEventListener('DOMContentLoaded', async () => {
+    showPageLoader();
+
+    await initPage();   // Дочекайся завершення
+    hidePageLoader();   // Ховаємо тільки після завантаження
+
+    loadCardsFromStorage();        // Локальні картки
+    renderCardsFromStorage();      // Відображення карток
+});
 
 // Змінна для збереження поточного пошукового запиту
 let currentQuery = '';
@@ -28,6 +40,8 @@ let currentPage = 1;
 // Кількість продуктів, які будуть завантажені на одну сторінку
 const IMAGES_PER_PAGE = 12;
 
+ 
+
 // Додаємо обробник події на категорії
 refs.categoriesListEl.addEventListener('click', async (e) => {
     if (e.target === e.currentTarget) return
@@ -37,6 +51,10 @@ refs.categoriesListEl.addEventListener('click', async (e) => {
     // Якщо ID не вказано — виходимо з функції
     if (!categoryName) return;
 
+  // Додаємо/знімаємо клас активної кнопки
+    const categoryButtons = refs.categoriesListEl.querySelectorAll('.categories__btn');
+    categoryButtons.forEach(btn => btn.classList.remove('categories__btn--active'));
+    e.target.classList.add('categories__btn--active');
     // Скидаємо номер сторінки на 1
     currentPage = 1;
 
@@ -46,7 +64,7 @@ refs.categoriesListEl.addEventListener('click', async (e) => {
     showLoader();
     try {
         const products = await fetchProductsByCategory(categoryName);
-    
+
         if (products.length === 0) {
             iziToast.error({
                 title: 'Error',
@@ -56,6 +74,10 @@ refs.categoriesListEl.addEventListener('click', async (e) => {
             hideLoader();
             return;
         }
+            cards.length = 0;
+            cards.push(...products);
+            saveCardsToStorage();
+
 
          // Якщо продукти знайдені — створюємо HTML-розмітку
         const markup = createMarkupProducts(products);
@@ -93,6 +115,7 @@ refs.formEl.addEventListener('submit', async (e) => {
     currentPage = 1;           // Скидаємо лічильник сторінок на першу
     clearMarkupProducts();     // Очищаємо попередні результати зі сторінки
     showLoader();              // Показуємо анімацію завантаження (спінер)
+     hideLoadMoreBtn();
 
     try {
         // Виконуємо запит до API на отримання продуктів (за пошуковим запитом, сторінкою і лімітом)
@@ -108,6 +131,10 @@ refs.formEl.addEventListener('submit', async (e) => {
             hideLoader(); // Ховаємо анімацію завантаження
             return;       // Виходимо з функції
         }
+           cards.length = 0;
+           cards.push(...products);
+           saveCardsToStorage();
+
 
         // Якщо продукти знайдені — створюємо HTML-розмітку
         const markup = createMarkupProducts(products);
@@ -189,11 +216,11 @@ refs.clearSearchBtnEl.addEventListener('click', () => {
     // Очищаємо поле вводу
     refs.inputEl.value = '';
 
-    // Очищаємо список продуктів
-    clearMarkupProducts();
+    // // Очищаємо список продуктів
+    // clearMarkupProducts();
 
-    // Ховаємо кнопку "Load More"
-    hideLoadMoreBtn();
+    // // Ховаємо кнопку "Load More"
+    // hideLoadMoreBtn();
 
     // Скидаємо номер сторінки на 1
     currentPage = 1;
@@ -206,4 +233,27 @@ refs.clearSearchBtnEl.addEventListener('click', () => {
     });
 });
 
+// Додаємо обробник події для відкриття модального вікна з деталями продукту
+refs.productsListEl.addEventListener('click', async (e) => {
+    const productCard = e.target.closest('.products__item');
+    if (!productCard) return;
+
+    const productId = productCard.dataset.id;
+    if (!productId) return;
+
+    try {
+        showLoader();
+        const product = await fetchProductById(productId);
+        openModal(product); // Показ модального вікна з деталями
+    } catch (error) {
+        iziToast.error({
+            title: 'Error',
+            message: 'Failed to load product details.',
+            position: 'topCenter',
+        });
+        console.error('Error loading product:', error);
+    } finally {
+        hideLoader();
+    }
+});
 

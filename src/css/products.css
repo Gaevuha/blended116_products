@@ -109,7 +109,8 @@
     position: relative;
 }
 
-.loader {
+.loader,
+.loader-page {
     width: 48px;
     height: 48px;
     display: none;
@@ -122,7 +123,7 @@
     animation: 1s rotate linear infinite;
  }
 
-.loader:before , .loader:after{
+.loader:before ,.loader:after{
     content: '';
     top: 0;
     left: 0;
