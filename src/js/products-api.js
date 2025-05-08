@@ -2,7 +2,7 @@
 
 // Функції для роботи з бекендом
 import axios from 'axios';
-
+// Функція для отримання категорій продуктів
 export async function fetchProductCategories() {
     const API_URL_CATEGORY = 'https://dummyjson.com/products/category-list';
   try {
@@ -13,7 +13,7 @@ export async function fetchProductCategories() {
     throw error;
   }
 }
-
+// Функція для отримання продуктів за категорією
 export async function fetchProductsByCategory(category) {
     // Встановлюємо поточну сторінку (статично — завжди 1)
     const currentPage = 1;
@@ -36,7 +36,7 @@ export async function fetchProductsByCategory(category) {
         throw error;
     }
 }
-
+// Функція для отримання всіх продуктів
 export async function fetchAllProducts() {
     // Встановлюємо поточну сторінку (статично — завжди 1)
     const currentPage = 1;
@@ -59,9 +59,21 @@ export async function fetchAllProducts() {
         throw error;
     }
 }
-
+// Функція для отримання продуктів за ID
 export async function fetchProductById(id) {
   const response = await fetch(`https://dummyjson.com/products/${id}`);
   if (!response.ok) throw new Error('Failed to fetch product');
   return await response.json();
+}
+// Функція для пошуку продуктів за назвою
+export async function searchProductsByName(query) {
+  const API_URL = `https://dummyjson.com/products/search?q=${encodeURIComponent(query)}&limit=12`;
+
+  try {
+    const response = await axios.get(API_URL);
+    return response.data.products;
+  } catch (error) {
+    console.error('Помилка під час пошуку продуктів:', error.message);
+    throw error;
+  }
 }

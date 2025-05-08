@@ -3,7 +3,12 @@
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 
-import { fetchProductsByCategory, fetchAllProducts, fetchProductById } from './js/products-api.js';
+import {
+    fetchProductsByCategory,
+    fetchAllProducts,
+    fetchProductById,
+    searchProductsByName
+} from './js/products-api.js';
 import {   
     createMarkupProducts,
     clearMarkupProducts,
@@ -21,15 +26,24 @@ import { refs } from './js/refs.js';
 import { cards, saveCardsToStorage, loadCardsFromStorage } from './js/storage.js';
 import { openModal, closeModal } from './js/modal.js';
 
+
 document.addEventListener('DOMContentLoaded', async () => {
-    showPageLoader();
+  showPageLoader();
 
-    await initPage();   // Дочекайся завершення
-    hidePageLoader();   // Ховаємо тільки після завантаження
+  // Дочекайся, поки DOM намалює лоадер
+  await new Promise(resolve => setTimeout(resolve, 100));
 
-    loadCardsFromStorage();        // Локальні картки
-    renderCardsFromStorage();      // Відображення карток
+//   loadCardsFromStorage();
+//   renderCardsFromStorage();
+  initPage();
+
+  hidePageLoader();
+
+  // Показуємо основний контент після зникнення лоадера
+    document.getElementById('content').classList.remove('is-hidden');
+    
 });
+
 
 // Змінна для збереження поточного пошукового запиту
 let currentQuery = '';
@@ -94,66 +108,67 @@ refs.categoriesListEl.addEventListener('click', async (e) => {
         hideLoader(); // Ховаємо анімацію завантаження
     }
 });
-// Додаємо обробник події на форму (пошуковий запит)
+// Обробник події submit форми пошуку
 refs.formEl.addEventListener('submit', async (e) => {
-    e.preventDefault(); // Відміняємо стандартну поведінку форми (перезавантаження сторінки)
+  e.preventDefault(); // Скасовуємо перезавантаження сторінки при відправці форми
 
-    // Отримуємо значення з поля вводу та обрізаємо зайві пробіли
-    currentQuery = refs.inputEl.value.trim();
+  const query = refs.inputEl.value.trim(); // Отримуємо та обрізаємо значення з поля вводу
 
-    // Якщо поле порожнє — показуємо повідомлення про помилку і зупиняємо виконання
-    if (!currentQuery) {
-        iziToast.error({
-            title: 'Error',
-            message: 'Please enter a search query.', // Повідомлення для користувача
-            position: 'topCenter',                   // Позиція повідомлення
-        });
-        return; // Виходимо з функції
+  // Якщо поле порожнє — показуємо повідомлення про помилку
+  if (!query) {
+    iziToast.error({
+      title: 'Error',
+      message: 'Please enter a search query.',
+      position: 'topCenter',
+    });
+    return; // Вихід із функції
+  }
+
+  clearMarkupProducts(); // Очищаємо попередні результати на сторінці
+  hideLoadMoreBtn();     // Приховуємо кнопку "Load More"
+  showLoader();          // Показуємо анімацію завантаження (спінер)
+
+  try {
+    // Шукаємо товари за введеним запитом
+    const products = await searchProductsByName(query);
+
+    // Якщо товари не знайдено — повідомляємо користувача
+    if (!products || products.length === 0) {
+      iziToast.error({
+        title: 'Error',
+        message: 'No products found.',
+        position: 'topCenter',
+      });
+      return;
     }
 
-    // Якщо запит валідний:
-    currentPage = 1;           // Скидаємо лічильник сторінок на першу
-    clearMarkupProducts();     // Очищаємо попередні результати зі сторінки
-    showLoader();              // Показуємо анімацію завантаження (спінер)
-     hideLoadMoreBtn();
+    // Очищаємо масив карток і додаємо нові
+    cards.length = 0;
+    cards.push(...products);
+    saveCardsToStorage(); // Зберігаємо картки у localStorage
 
-    try {
-        // Виконуємо запит до API на отримання продуктів (за пошуковим запитом, сторінкою і лімітом)
-        const products = await fetchAllProducts(currentQuery, currentPage, IMAGES_PER_PAGE);
+    // Створюємо HTML-розмітку з отриманих товарів
+    const markup = createMarkupProducts(products);
 
-        // Якщо нічого не знайдено — показуємо повідомлення про помилку
-        if (products.length === 0) {
-            iziToast.error({
-                title: 'Error',
-                message: 'No products found.', // Текст повідомлення
-                position: 'topCenter',         // Позиція
-            });
-            hideLoader(); // Ховаємо анімацію завантаження
-            return;       // Виходимо з функції
-        }
-           cards.length = 0;
-           cards.push(...products);
-           saveCardsToStorage();
+    // Вставляємо розмітку в DOM (в кінець списку)
+    refs.productsListEl.insertAdjacentHTML('beforeend', markup);
 
+    // Показуємо кнопку "Load More"
+    showLoadMoreBtn();
 
-        // Якщо продукти знайдені — створюємо HTML-розмітку
-        const markup = createMarkupProducts(products);
-
-        // Вставляємо згенеровану розмітку в DOM
-        refs.productsListEl.insertAdjacentHTML('beforeend', markup);
-
-        // Показуємо кнопку "Load More" для завантаження наступної сторінки
-        showLoadMoreBtn();
-
-    } catch (error) {
-        // Якщо сталася помилка при запиті — лог у консоль
-        console.error('Error fetching products:', error.message);
-
-    } finally {
-        // У будь-якому випадку (успіх або помилка) — ховаємо лоадер і скидаємо форму
-        hideLoader();         // Ховаємо анімацію завантаження
-        refs.formEl.reset();  // Очищаємо форму пошуку
-    }
+  } catch (error) {
+    // Якщо сталася помилка — виводимо її в консоль і показуємо повідомлення
+    console.error('Search error:', error.message);
+    iziToast.error({
+      title: 'Error',
+      message: 'Something went wrong. Please try again.',
+      position: 'topCenter',
+    });
+  } finally {
+    // Завжди ховаємо лоадер і очищаємо поле вводу
+    hideLoader();
+    refs.formEl.reset();
+  }
 });
 
 // Додаємо обробник події на кнопку "Load More"

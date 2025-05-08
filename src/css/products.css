@@ -123,7 +123,8 @@
     animation: 1s rotate linear infinite;
  }
 
-.loader:before ,.loader:after{
+ .loader:before ,.loader:after,
+.loader-page:before ,.loader-page:after {
     content: '';
     top: 0;
     left: 0;
@@ -132,7 +133,8 @@
     border-bottom-color:#808080;
     transform: translate(-10px, 19px) rotate(-35deg);
   }
- .loader:after {
+ .loader:after,
+ .loader-page:after{
     border-color: #de3500 #0000 #0000 #0000 ;
     transform: translate(32px, 3px) rotate(-35deg);
   }
@@ -148,3 +150,12 @@
     width: 48px;
     height: 48px;
 }
+
+  .loader-page.is-visible {
+    top: 132px;
+    display: block;
+    position: absolute;
+    left: 50%;
+    width: 48px;
+    height: 48px;
+  }

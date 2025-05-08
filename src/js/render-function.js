@@ -80,8 +80,6 @@ export async function initPage() {
   // Сховати блок "not-found", якщо він був показаний раніше
   document.querySelector('.not-found').classList.add('is-hidden');
 
-  // Показати індикатор завантаження (спінер)
-  showLoader();
 
   try {
     // Отримати список категорій з API
@@ -114,7 +112,8 @@ export async function initPage() {
       // Показати список продуктів
       refs.productsListEl.classList.remove('hidden');
     }
-
+    showLoadMoreBtn();// Показати кнопку "Load more"
+    
     // Показати список категорій
     refs.categoriesListEl.classList.remove('hidden');
 
@@ -126,7 +125,8 @@ export async function initPage() {
     const id = card.dataset.id;
     if (!id) return;
 
-    openModal(id);
+      openModal(id);
+      
 });
 
   } catch (error) {
