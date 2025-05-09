@@ -13,36 +13,40 @@ import {
     createMarkupProducts,
     clearMarkupProducts,
     initPage,
-    showLoadMoreBtn,
-    hideLoadMoreBtn,
-    showLoader,
-    hideLoader,
-    addLoadMoreProducts,
-    renderCardsFromStorage,
-    showPageLoader,
-    hidePageLoader
+  addLoadMoreProducts,
+  addCardClickListener
 } from "./js/render-function";
 import { refs } from './js/refs.js';
-import { cards, saveCardsToStorage, loadCardsFromStorage } from './js/storage.js';
-import { openModal, closeModal } from './js/modal.js';
+import { cards, saveCardsToStorage } from './js/storage.js';
+import { openModal } from './js/modal.js';
+import {
+  showNotFoundMessage,
+  hideNotFoundMessage,
+  showLoadMoreBtn,
+  hideLoadMoreBtn,
+  showLoader,
+  hideLoader,
+  showPageLoader,
+  hidePageLoader
+} from './js/handlers.js';
 
 
 document.addEventListener('DOMContentLoaded', async () => {
   showPageLoader();
 
-  // Дочекайся, поки DOM намалює лоадер
   await new Promise(resolve => setTimeout(resolve, 100));
 
-//   loadCardsFromStorage();
-//   renderCardsFromStorage();
-  initPage();
-
-  hidePageLoader();
-
-  // Показуємо основний контент після зникнення лоадера
+  try {
+    await initPage();          // ✅ єдиний правильний виклик
+    addCardClickListener();    // ✅ після завершення initPage()
+  } catch (error) {
+    console.error('Помилка під час ініціалізації сторінки:', error.message);
+  } finally {
+    hidePageLoader();
     document.getElementById('content').classList.remove('is-hidden');
-    
+  }
 });
+
 
 
 // Змінна для збереження поточного пошукового запиту
@@ -132,15 +136,15 @@ refs.formEl.addEventListener('submit', async (e) => {
     // Шукаємо товари за введеним запитом
     const products = await searchProductsByName(query);
 
-    // Якщо товари не знайдено — повідомляємо користувача
+   
+    // Якщо товари не знайдено — показуємо блок not-found
     if (!products || products.length === 0) {
-      iziToast.error({
-        title: 'Error',
-        message: 'No products found.',
-        position: 'topCenter',
-      });
+      showNotFoundMessage();
       return;
     }
+
+    // Якщо знайдено — ховаємо блок not-found
+    hideNotFoundMessage();
 
     // Очищаємо масив карток і додаємо нові
     cards.length = 0;

@@ -15,4 +15,5 @@ export const refs = {
     modalCloseBtnEl: document.querySelector('.modal__close-btn'),
     modalContentEl: document.querySelector('.modal__content'),
     modalOverlayEl: document.querySelector('.modal__overlay'),
+    notFound: document.querySelector('.not-found'),
 };

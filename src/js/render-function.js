@@ -4,8 +4,13 @@ import { fetchProductCategories, fetchAllProducts } from './products-api.js';
 import { refs } from './refs.js';
 import { cards } from './storage.js';
 import { openModal } from './modal.js';
+import {
+  onProductCardClick,
+  showLoadMoreBtn,
+  hideLoader,
+} from './handlers.js';
 
-
+console.log(refs);
 //Функції для створення, рендеру або видалення розмітки
 const listProducts = document.querySelector('.products');
 // Функція для створення розмітки категорій
@@ -31,47 +36,7 @@ export function createMarkupProducts(products) {
  </li>
 `   }).join('');
 }
-
-// Функція для ініціалізації сторінки (отримання даних і рендеринг)
-// export async function initPage() {
-//     // Сховати списки
-//   refs.categoriesListEl.classList.add('hidden');
-//   refs.productsListEl.classList.add('hidden');
-
-//     // Сховати блок "not found", якщо він раніше зʼявлявся
-//   document.querySelector('.not-found').classList.add('is-hidden');
-
-//   // Показати лоадер
-//   showLoader();
-
-//   try {
-//     // Отримуємо категорії і продукти
-//     const categories = await fetchProductCategories();
-//     const products = await fetchAllProducts();
-
-//     // Створюємо розмітку категорій і продуктів
-//     const categoriesMarkup = createMarkupCategories(categories);
-//     const productsMarkup = createMarkupProducts(products);
-
-//     // Вставляємо розмітку в DOM
-//     const categoriesList = document.querySelector('.categories');
-//     const productsList = document.querySelector('.products');
-    
-//     categoriesList.insertAdjacentHTML('beforeend', categoriesMarkup);
-//     productsList.insertAdjacentHTML('beforeend', productsMarkup);
-      
-//       // Показати списки
-//     refs.categoriesListEl.classList.remove('hidden');
-//     refs.productsListEl.classList.remove('hidden');
-  
-//   } catch (error) {
-//     console.error('Помилка при ініціалізації сторінки:', error.message);
-//   } finally {
-//     // Сховати лоадер
-//     hideLoader();
-//   }
-// }
-
+// Функція для ініціалізації сторінки
 export async function initPage() {
   // Сховати список категорій та продуктів перед завантаженням
   refs.categoriesListEl.classList.add('hidden');
@@ -142,53 +107,6 @@ export async function initPage() {
 export function clearMarkupProducts() {
     listProducts.innerHTML = '';
 }
-// Функція для відображення кнопки 
-export function showLoadMoreBtn() {
-    if (refs.loadMoreBtn) {
-        refs.loadMoreBtn.classList.remove('is-hidden');
-        refs.loadMoreBtn.classList.add('is-visible');
-    }
-}
-
-// Функція для приховування кнопки 
-export function hideLoadMoreBtn() {
-    if (refs.loadMoreBtn) {
-        refs.loadMoreBtn.classList.add('is-hidden');
-        refs.loadMoreBtn.classList.remove('is-visible');
-    }
-}
-
-// Функція для відображення лоадера
-export function showLoader() {
-  const loader = document.querySelector('.loader');
-  if (loader) {
-    loader.classList.remove('is-hidden');
-    loader.classList.add('is-visible');
-  }
-}
-// Функція для приховування лоадера
-export function hideLoader() {
-  const loader = document.querySelector('.loader');
-  if (loader) {
-    loader.classList.add('is-hidden');
-    loader.classList.remove('is-visible');
-  }
-}
-
-export function showPageLoader() {
-  document.querySelectorAll('.loader-page').forEach(loader => {
-    loader.classList.remove('is-hidden');
-    loader.classList.add('is-visible');
-  });
-}
-
-export function hidePageLoader() {
-  document.querySelectorAll('.loader-page').forEach(loader => {
-    loader.classList.add('is-hidden');
-    loader.classList.remove('is-visible');
-  });
-}
-
 // Функція додавання елементів на сторінку по кліку на кнопку 'Load more'
 export async function addLoadMoreProducts(products) {
     try {
@@ -200,17 +118,17 @@ export async function addLoadMoreProducts(products) {
     }
 }
 
-refs.productsListEl.addEventListener('click', (e) => {
-  const card = e.target.closest('.products__item');
-  if (!card) return;
+// refs.productsListEl.addEventListener('click', (e) => {
+//   const card = e.target.closest('.products__item');
+//   if (!card) return;
 
-  const productId = card.dataset.id;
-  const product = cards.find(p => p.id === Number(productId)); // отримуємо продукт за ID
+//   const productId = card.dataset.id;
+//   const product = cards.find(p => p.id === Number(productId)); // отримуємо продукт за ID
 
-  if (product) {
-    openModal(product); // передаємо продукт до модалки
-  }
-});
+//   if (product) {
+//     openModal(product); // передаємо продукт до модалки
+//   }
+// });
 // Функція для рендерингу карток з localStorage
 export async function renderCardsFromStorage() {
     if (cards.length > 0) {
@@ -254,3 +172,12 @@ export async function renderModalProduct(product) {
   `;
 }
 
+// refs.productsListEl.addEventListener('click', onProductCardClick);
+
+export function addCardClickListener() {
+  if (refs.productsListEl) {
+    refs.productsListEl.addEventListener('click', onProductCardClick);
+  } else {
+    console.warn('refs.productsListEl не знайдено');
+  }
+}
