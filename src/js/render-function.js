@@ -9,8 +9,9 @@ import {
   showLoadMoreBtn,
   hideLoader,
 } from './handlers.js';
+import { getCart, addToCart, removeFromCart, isInCart, updateCartCount } from './storage.js';
 
-console.log(refs);
+
 //Функції для створення, рендеру або видалення розмітки
 const listProducts = document.querySelector('.products');
 // Функція для створення розмітки категорій
@@ -118,17 +119,6 @@ export async function addLoadMoreProducts(products) {
     }
 }
 
-// refs.productsListEl.addEventListener('click', (e) => {
-//   const card = e.target.closest('.products__item');
-//   if (!card) return;
-
-//   const productId = card.dataset.id;
-//   const product = cards.find(p => p.id === Number(productId)); // отримуємо продукт за ID
-
-//   if (product) {
-//     openModal(product); // передаємо продукт до модалки
-//   }
-// });
 // Функція для рендерингу карток з localStorage
 export async function renderCardsFromStorage() {
     if (cards.length > 0) {
@@ -141,6 +131,7 @@ export async function renderCardsFromStorage() {
 // Функція для рендерингу продукту в модальному вікні
 export async function renderModalProduct(product) {
   const {
+    id,
     images,
     title,
     description,
@@ -170,10 +161,31 @@ export async function renderModalProduct(product) {
       <button class="modal-product__buy-btn" type="button">Buy</button>
     </div>
   `;
+  const cartBtn = refs.modalContentEl.querySelector('.modal-product__btn--cart');
+  if (!cartBtn) return;
+
+  // Перевірка, чи товар у кошику
+  const inCart = isInCart(id);
+  cartBtn.textContent = inCart ? 'Remove from Cart' : 'Add to Cart';
+
+  // Обробник кліку
+  cartBtn.onclick = () => {
+    if (isInCart(id)) {
+      removeFromCart(id);
+      cartBtn.textContent = 'Add to Cart';
+    } else {
+      addToCart(product);
+      cartBtn.textContent = 'Remove from Cart';
+
+      // рендеримо товар в <ul class="products"></ul>
+      const markup = createMarkupProducts([product]);
+      document.querySelector('.products').insertAdjacentHTML('beforeend', markup);
+    }
+    updateCartCount(); // 🔁 оновлюємо лічильник у header
+  };
 }
 
-// refs.productsListEl.addEventListener('click', onProductCardClick);
-
+// Функція для додавання слухача подій на картки продуктів
 export function addCardClickListener() {
   if (refs.productsListEl) {
     refs.productsListEl.addEventListener('click', onProductCardClick);
@@ -181,3 +193,4 @@ export function addCardClickListener() {
     console.warn('refs.productsListEl не знайдено');
   }
 }
+

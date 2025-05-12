@@ -75,4 +75,5 @@ export function onProductCardClick(e) {
     if (product) {
       openModal(product);
     }
-  }
+}
+  

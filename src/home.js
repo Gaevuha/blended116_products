@@ -13,11 +13,11 @@ import {
     createMarkupProducts,
     clearMarkupProducts,
     initPage,
-  addLoadMoreProducts,
-  addCardClickListener
+    addLoadMoreProducts,
+    addCardClickListener
 } from "./js/render-function";
 import { refs } from './js/refs.js';
-import { cards, saveCardsToStorage } from './js/storage.js';
+import { cards, saveCardsToStorage, updateCartCount } from './js/storage.js';
 import { openModal } from './js/modal.js';
 import {
   showNotFoundMessage,
@@ -27,12 +27,13 @@ import {
   showLoader,
   hideLoader,
   showPageLoader,
-  hidePageLoader
+  hidePageLoader,
 } from './js/handlers.js';
 
 
 document.addEventListener('DOMContentLoaded', async () => {
   showPageLoader();
+  updateCartCount();
 
   await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -46,8 +47,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('content').classList.remove('is-hidden');
   }
 });
-
-
 
 // Змінна для збереження поточного пошукового запиту
 let currentQuery = '';
