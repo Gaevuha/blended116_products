@@ -8,6 +8,8 @@ import {
   onProductCardClick,
   showLoadMoreBtn,
   hideLoader,
+  showNotFoundMessage,
+  hideNotFoundMessage
 } from './handlers.js';
 import { getCart, addToCart, removeFromCart, isInCart, updateCartCount } from './storage.js';
 
@@ -170,18 +172,37 @@ export async function renderModalProduct(product) {
 
   // Обробник кліку
   cartBtn.onclick = () => {
+    const cartList = document.querySelector('.products');
+  
     if (isInCart(id)) {
       removeFromCart(id);
       cartBtn.textContent = 'Add to Cart';
+  
+      // 🔥 Видаляємо відповідну картку з кошика (якщо на сторінці Cart)
+      const productCard = cartList?.querySelector(`.products__item[data-id="${id}"]`);
+      if (productCard) productCard.remove();
+  
+      // 🔁 Після видалення оновлюємо підсумки
+      const updatedCart = getCart();
+      updateCartCount();
+      updateSummary(updatedCart);
+  
+      if (updatedCart.length === 0) {
+        showNotFoundMessage();
+      }
+  
     } else {
       addToCart(product);
       cartBtn.textContent = 'Remove from Cart';
-
-      // рендеримо товар в <ul class="products"></ul>
-      const markup = createMarkupProducts([product]);
-      document.querySelector('.products').insertAdjacentHTML('beforeend', markup);
+  
+      // 🛒 Рендеримо товар у список, якщо на сторінці Cart
+      if (cartList) {
+        const markup = createMarkupProducts([product]);
+        cartList.insertAdjacentHTML('beforeend', markup);
+      }
+  
+      updateCartCount();
     }
-    updateCartCount(); // 🔁 оновлюємо лічильник у header
   };
 }
 
@@ -193,4 +214,34 @@ export function addCardClickListener() {
     console.warn('refs.productsListEl не знайдено');
   }
 }
+// Функція для відображення повідомлення "No Products Found"
+export function renderCartProducts() {
+  const cartItems = getCart();
+  const list = document.querySelector('.products');
 
+  list.innerHTML = ''; // очищаємо список
+
+  if (cartItems.length === 0) {
+    showNotFoundMessage();
+    updateSummary(cartItems); // Показати нульові значення
+    return;
+  }
+
+  hideNotFoundMessage();
+
+  const markup = createMarkupProducts(cartItems);
+  list.insertAdjacentHTML('beforeend', markup);
+
+  updateSummary(cartItems);
+}
+
+// Функція для оновлення підсумків у кошику
+export function updateSummary(cartItems) {
+const countEl = document.querySelector('[data-count]');
+const priceEl = document.querySelector('[data-price]');
+const totalCount = cartItems.length;
+const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
+
+countEl.textContent = totalCount;
+priceEl.textContent = `$${totalPrice.toFixed(2)}`;
+}

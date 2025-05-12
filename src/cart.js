@@ -5,10 +5,8 @@
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 import { getCart, updateCartCount } from './js/storage.js';
-import { createMarkupProducts } from './js/render-function.js';
+import { renderCartProducts } from './js/render-function.js';
 import {
-    showNotFoundMessage,
-    hideNotFoundMessage,
     showLoader,
     hideLoader,
 } from './js/handlers.js';
@@ -20,37 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCartProducts();  
     updateCartCount();
 });
-
-function renderCartProducts() {
-    const cartItems = getCart();
-    const list = document.querySelector('.products');
-  
-    list.innerHTML = ''; // очищаємо список
-  
-    if (cartItems.length === 0) {
-      showNotFoundMessage();
-      updateSummary(cartItems); // Показати нульові значення
-      return;
-    }
-  
-    hideNotFoundMessage();
-  
-    const markup = createMarkupProducts(cartItems);
-    list.insertAdjacentHTML('beforeend', markup);
-  
-    updateSummary(cartItems);
-  }
-  
-
-function updateSummary(cartItems) {
-  const countEl = document.querySelector('[data-count]');
-  const priceEl = document.querySelector('[data-price]');
-  const totalCount = cartItems.length;
-  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
-
-  countEl.textContent = totalCount;
-  priceEl.textContent = `$${totalPrice.toFixed(2)}`;
-}
 
 // Додаємо обробник події для відкриття модального вікна з деталями продукту
 refs.cartPageProduct.addEventListener('click', async (e) => {
